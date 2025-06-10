@@ -1,6 +1,12 @@
 ﻿using System;
 using System.Runtime.Caching;
 using System.Configuration;
+using System.Net;
+using System.Net.Mail;
+using System.Net.Mime;
+using System.Threading;
+using System.ComponentModel;
+using System.Threading.Tasks;
 
 namespace EmailTwoFactorLibrary
 {
@@ -17,7 +23,7 @@ namespace EmailTwoFactorLibrary
             {
                 throw new ArgumentOutOfRangeException("EmailTwoFactorLibrary.Token.Length", ConfigurationManager.AppSettings["EmailTwoFactorLibrary.Token.Length"], "Token length should be an integer representing the number of characters in the token.");
             }
-            if (!int.TryParse(ConfigurationManager.AppSettings["EmailTwoFactorLibrary.Token.Expiration"], out _length))
+            if (!int.TryParse(ConfigurationManager.AppSettings["EmailTwoFactorLibrary.Token.Expiration"], out _expiration))
             {
                 throw new ArgumentOutOfRangeException("EmailTwoFactorLibrary.Token.Expiration", ConfigurationManager.AppSettings["EmailTwoFactorLibrary.Token.Expiration"], "Token expiration should be an integer representing the minutes until expiration.");
             }
@@ -31,9 +37,20 @@ namespace EmailTwoFactorLibrary
 
             return token.ToString().PadLeft(_length, '0');
         }
-        public static void SetToken(int userId, string token)
+        public static string GetToken(string userId)
         {
+            var token = GenerateToken();
             _cache.Set(userId.ToString(), token, DateTimeOffset.UtcNow.AddMinutes(_expiration));
+            return token;
+        }
+        public static bool VerifyToken(string userId, string token)
+        {
+            if (_cache.Get(userId.ToString()).ToString() == token)
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }

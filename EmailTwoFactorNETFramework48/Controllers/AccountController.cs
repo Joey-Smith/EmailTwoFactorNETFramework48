@@ -9,6 +9,7 @@ using Microsoft.AspNet.Identity;
 using Microsoft.AspNet.Identity.Owin;
 using Microsoft.Owin.Security;
 using EmailTwoFactorNETFramework48.Models;
+using EmailTwoFactorLibrary;
 
 namespace EmailTwoFactorNETFramework48.Controllers
 {
@@ -83,7 +84,7 @@ namespace EmailTwoFactorNETFramework48.Controllers
                 case SignInStatus.LockedOut:
                     return View("Lockout");
                 case SignInStatus.RequiresVerification:
-                    return RedirectToAction("SendCode", new { ReturnUrl = returnUrl, RememberMe = model.RememberMe });
+                    return RedirectToAction("VerifyCode", new { ReturnUrl = returnUrl, RememberMe = model.RememberMe });
                 case SignInStatus.Failure:
                 default:
                     ModelState.AddModelError("", "Invalid login attempt.");
@@ -94,14 +95,17 @@ namespace EmailTwoFactorNETFramework48.Controllers
         //
         // GET: /Account/VerifyCode
         [AllowAnonymous]
-        public async Task<ActionResult> VerifyCode(string provider, string returnUrl, bool rememberMe)
+        public async Task<ActionResult> VerifyCode(string returnUrl, bool rememberMe)
         {
             // Require that the user has already logged in via username/password or external login
             if (!await SignInManager.HasBeenVerifiedAsync())
             {
                 return View("Error");
             }
-            return View(new VerifyCodeViewModel { Provider = provider, ReturnUrl = returnUrl, RememberMe = rememberMe });
+
+            await SignInManager.SendTwoFactorCodeAsync("Email Code");
+
+            return View(new VerifyCodeViewModel { Provider = "Email Code", ReturnUrl = returnUrl, RememberMe = rememberMe });
         }
 
         //
